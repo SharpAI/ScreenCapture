@@ -1,5 +1,6 @@
 package com.mtsahakis.mediaprojectiondemo;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +15,7 @@ import android.media.ImageReader;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
@@ -24,6 +26,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
+import android.support.v4.app.ActivityCompat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,7 +40,7 @@ public class ScreenCaptureImageActivity extends Activity {
     private static String STORE_DIRECTORY;
     private static int IMAGES_PRODUCED;
     private static final String SCREENCAP_NAME = "screencap";
-    private static final int VIRTUAL_DISPLAY_FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
+    private static final int VIRTUAL_DISPLAY_FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
     private static MediaProjection sMediaProjection;
 
     private MediaProjectionManager mProjectionManager;
@@ -50,6 +53,7 @@ public class ScreenCaptureImageActivity extends Activity {
     private int mHeight;
     private int mRotation;
     private OrientationChangeCallback mOrientationChangeCallback;
+    private static final int REQUEST_PERMISSION_KEY = 1;
 
     private class ImageAvailableListener implements ImageReader.OnImageAvailableListener {
         @Override
@@ -57,6 +61,7 @@ public class ScreenCaptureImageActivity extends Activity {
             Image image = null;
             FileOutputStream fos = null;
             Bitmap bitmap = null;
+            File saveTo = null;
 
             try {
                 image = reader.acquireLatestImage();
@@ -70,9 +75,9 @@ public class ScreenCaptureImageActivity extends Activity {
                     // create bitmap
                     bitmap = Bitmap.createBitmap(mWidth + rowPadding / pixelStride, mHeight, Bitmap.Config.ARGB_8888);
                     bitmap.copyPixelsFromBuffer(buffer);
-
+                    saveTo = new File(STORE_DIRECTORY + "/myscreen_" + IMAGES_PRODUCED + ".jpg");
                     // write bitmap to a file
-                    fos = new FileOutputStream(STORE_DIRECTORY + "/myscreen_" + IMAGES_PRODUCED + ".png");
+                    fos = new FileOutputStream(saveTo);
                     bitmap.compress(CompressFormat.JPEG, 100, fos);
 
                     IMAGES_PRODUCED++;
@@ -84,9 +89,12 @@ public class ScreenCaptureImageActivity extends Activity {
             } finally {
                 if (fos != null) {
                     try {
+                        fos.flush();
                         fos.close();
+                        saveTo.delete();
                     } catch (IOException ioe) {
                         ioe.printStackTrace();
+                        saveTo.delete();
                     }
                 }
 
@@ -151,6 +159,14 @@ public class ScreenCaptureImageActivity extends Activity {
         // call for the projection manager
         mProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
 
+        String[] PERMISSIONS = {
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+        };
+        if (!Function.hasPermissions(this, PERMISSIONS)) {
+            ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_KEY);
+        }
+
         // start projection
         Button startButton = (Button) findViewById(R.id.startButton);
         startButton.setOnClickListener(new OnClickListener() {
@@ -188,9 +204,11 @@ public class ScreenCaptureImageActivity extends Activity {
             sMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
 
             if (sMediaProjection != null) {
-                File externalFilesDir = getExternalFilesDir(null);
+                //File externalFilesDir = getExternalFilesDir(null);
+                //File externalFilesDir = getExternalMediaDirs();
+                File externalFilesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
                 if (externalFilesDir != null) {
-                    STORE_DIRECTORY = externalFilesDir.getAbsolutePath() + "/screenshots/";
+                    STORE_DIRECTORY = externalFilesDir.getAbsolutePath();// + "/screenshots/";
                     File storeDirectory = new File(STORE_DIRECTORY);
                     if (!storeDirectory.exists()) {
                         boolean success = storeDirectory.mkdirs();
@@ -244,9 +262,9 @@ public class ScreenCaptureImageActivity extends Activity {
     private void createVirtualDisplay() {
         // get width and height
         Point size = new Point();
-        mDisplay.getSize(size);
-        mWidth = size.x;
-        mHeight = size.y;
+        //mDisplay.getSize(size);
+        mWidth = 1920;//size.x;
+        mHeight = 1080;//size.y;
 
         // start capture reader
         mImageReader = ImageReader.newInstance(mWidth, mHeight, PixelFormat.RGBA_8888, 2);
