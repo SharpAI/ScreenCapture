@@ -98,9 +98,9 @@ public class ScreenCaptureImageActivity extends Activity {
                     }
                 }
 
-                if (bitmap != null) {
+                /*if (bitmap != null) {
                     bitmap.recycle();
-                }
+                }*/
 
                 if (image != null) {
                     image.close();
@@ -248,7 +248,7 @@ public class ScreenCaptureImageActivity extends Activity {
         mHeight = 1080;//size.y;
 
         // start capture reader
-        mImageReader = ImageReader.newInstance(mWidth, mHeight, PixelFormat.RGBA_8888, 2);
+        mImageReader = ImageReader.newInstance(mWidth, mHeight, PixelFormat.RGBA_8888, 10);
         mVirtualDisplay = sMediaProjection.createVirtualDisplay(SCREENCAP_NAME, mWidth, mHeight, mDensity, VIRTUAL_DISPLAY_FLAGS, mImageReader.getSurface(), null, mHandler);
         mImageReader.setOnImageAvailableListener(new ImageAvailableListener(), mHandler);
     }
