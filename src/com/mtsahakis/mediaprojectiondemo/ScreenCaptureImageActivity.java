@@ -167,26 +167,7 @@ public class ScreenCaptureImageActivity extends Activity {
             ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_KEY);
         }
 
-        // start projection
-        Button startButton = (Button) findViewById(R.id.startButton);
-        startButton.setOnClickListener(new OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                startProjection();
-            }
-        });
-
-        // stop projection
-        Button stopButton = (Button) findViewById(R.id.stopButton);
-        stopButton.setOnClickListener(new OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                stopProjection();
-            }
-        });
-
+        startProjection();
         // start capture handling thread
         new Thread() {
             @Override

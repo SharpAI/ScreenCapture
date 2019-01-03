@@ -16,13 +16,16 @@
         <activity
             android:name=".ScreenCaptureImageActivity"
             android:label="@string/app_name"
-            android:configChanges="orientation|screenSize">
+            android:theme="@style/Theme.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".FloatingWindow"
+            android:exported="true" />
     </application>
 
 </manifest>
