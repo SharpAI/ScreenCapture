@@ -2,6 +2,8 @@ package com.mtsahakis.mediaprojectiondemo;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
@@ -58,6 +60,28 @@ public class ScreenCaptureImageActivity extends Activity {
     private int mRotation;
     private OrientationChangeCallback mOrientationChangeCallback;
     private static final int REQUEST_PERMISSION_KEY = 1;
+
+    public class ExceptionHandler implements Thread.UncaughtExceptionHandler {
+       public ExceptionHandler() {
+
+       }
+       @Override
+       public void uncaughtException(Thread thread, Throwable ex) {
+           quitAndStartLater();
+       }
+    }
+
+    private void quitAndStartLater() {
+        Intent intent = new Intent(ScreenCaptureImageActivity.this, ScreenCaptureImageActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(ScreenCaptureImageActivity.this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+        AlarmManager mgr = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis()+15000, pendingIntent);
+
+       finish();
+       System.exit(2);
+    }
 
     private class ImageAvailableListener implements ImageReader.OnImageAvailableListener {
         public void uploadImage(String imgPath) {
@@ -214,6 +238,8 @@ public class ScreenCaptureImageActivity extends Activity {
                 Looper.loop();
             }
         }.start();
+
+        Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler());
     }
 
     @Override
