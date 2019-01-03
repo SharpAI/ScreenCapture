@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.PixelFormat;
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 
 public class ScreenCaptureImageActivity extends Activity {
@@ -154,6 +156,7 @@ public class ScreenCaptureImageActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getApplicationList();
         setContentView(R.layout.activity_main);
 
         // call for the projection manager
@@ -227,7 +230,20 @@ public class ScreenCaptureImageActivity extends Activity {
     private void startProjection() {
         startActivityForResult(mProjectionManager.createScreenCaptureIntent(), REQUEST_CODE);
     }
-
+    private void getApplicationList(){
+        Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        List<ResolveInfo> pkgAppsList = getApplicationContext().getPackageManager().queryIntentActivities( mainIntent, 0);
+        for (int i=0; i<pkgAppsList.size(); i++) {
+            ResolveInfo resolveInfo = pkgAppsList.get(i);
+            String currentHomePackage = resolveInfo.activityInfo.packageName;
+            String name = resolveInfo.activityInfo.name;
+            Log.d(TAG,"Current Package is "+currentHomePackage+" name is "+name);
+            if(currentHomePackage.equals("tv.danmaku.ijk.media.example")){
+                Log.i(TAG,"Live Streaming APP is installed "+name);
+            }
+        }
+    }
     private void stopProjection() {
         mHandler.post(new Runnable() {
             @Override
