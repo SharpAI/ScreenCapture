@@ -31,6 +31,8 @@ import android.support.v4.app.ActivityCompat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -58,6 +60,36 @@ public class ScreenCaptureImageActivity extends Activity {
     private static final int REQUEST_PERMISSION_KEY = 1;
 
     private class ImageAvailableListener implements ImageReader.OnImageAvailableListener {
+        public void uploadImage(String imgPath) {
+            File file = null;
+            URL url;
+            HttpURLConnection urlConnection = null;
+
+            file = new File(imgPath);
+            try {
+                url = new URL("http://127.0.0.1:" + 3000 + "/api/post?url=" + imgPath);
+
+                urlConnection = (HttpURLConnection) url
+                        .openConnection();
+
+                int responseCode = urlConnection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    Log.d(TAG, "connect success ");
+                } else {
+                    file.delete();
+                }
+            } catch (Exception e) {
+                file.delete();
+                urlConnection = null;
+                //e.printStackTrace();
+                Log.v(TAG, "Detector is not running");
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+            }
+
+        }
         @Override
         public void onImageAvailable(ImageReader reader) {
             Image image = null;
@@ -93,7 +125,7 @@ public class ScreenCaptureImageActivity extends Activity {
                     try {
                         fos.flush();
                         fos.close();
-                        saveTo.delete();
+                        //saveTo.delete();
                     } catch (IOException ioe) {
                         ioe.printStackTrace();
                         saveTo.delete();
@@ -108,6 +140,8 @@ public class ScreenCaptureImageActivity extends Activity {
                     image.close();
                 }
             }
+
+            uploadImage(saveTo.getAbsolutePath());
         }
     }
 
