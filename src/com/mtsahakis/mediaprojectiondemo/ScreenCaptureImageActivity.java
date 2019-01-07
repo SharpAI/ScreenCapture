@@ -2,6 +2,8 @@ package com.mtsahakis.mediaprojectiondemo;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
@@ -31,6 +33,8 @@ import android.support.v4.app.ActivityCompat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -57,7 +61,59 @@ public class ScreenCaptureImageActivity extends Activity {
     private OrientationChangeCallback mOrientationChangeCallback;
     private static final int REQUEST_PERMISSION_KEY = 1;
 
+    public class ExceptionHandler implements Thread.UncaughtExceptionHandler {
+       public ExceptionHandler() {
+
+       }
+       @Override
+       public void uncaughtException(Thread thread, Throwable ex) {
+           quitAndStartLater();
+       }
+    }
+
+    private void quitAndStartLater() {
+        Intent intent = new Intent(ScreenCaptureImageActivity.this, ScreenCaptureImageActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(ScreenCaptureImageActivity.this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+        AlarmManager mgr = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis()+15000, pendingIntent);
+
+       finish();
+       System.exit(2);
+    }
+
     private class ImageAvailableListener implements ImageReader.OnImageAvailableListener {
+        public void uploadImage(String imgPath) {
+            File file = null;
+            URL url;
+            HttpURLConnection urlConnection = null;
+
+            file = new File(imgPath);
+            try {
+                url = new URL("http://127.0.0.1:" + 3000 + "/api/post?url=" + imgPath);
+
+                urlConnection = (HttpURLConnection) url
+                        .openConnection();
+
+                int responseCode = urlConnection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    Log.d(TAG, "connect success ");
+                } else {
+                    file.delete();
+                }
+            } catch (Exception e) {
+                file.delete();
+                urlConnection = null;
+                //e.printStackTrace();
+                Log.v(TAG, "Detector is not running");
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+            }
+
+        }
         @Override
         public void onImageAvailable(ImageReader reader) {
             Image image = null;
@@ -93,7 +149,7 @@ public class ScreenCaptureImageActivity extends Activity {
                     try {
                         fos.flush();
                         fos.close();
-                        saveTo.delete();
+                        //saveTo.delete();
                     } catch (IOException ioe) {
                         ioe.printStackTrace();
                         saveTo.delete();
@@ -108,6 +164,8 @@ public class ScreenCaptureImageActivity extends Activity {
                     image.close();
                 }
             }
+
+            uploadImage(saveTo.getAbsolutePath());
         }
     }
 
@@ -180,6 +238,8 @@ public class ScreenCaptureImageActivity extends Activity {
                 Looper.loop();
             }
         }.start();
+
+        Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler());
     }
 
     @Override
